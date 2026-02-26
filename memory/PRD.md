@@ -1,62 +1,71 @@
 # GitOracle - GitHub Natural Language Search
 
 ## Problem Statement
-Build a web application that enables users to search across all GitHub resources using natural language queries instead of GitHub's standard search syntax. Users can find repositories, issues, pull requests, users, organizations, code snippets, commits, discussions through conversational search terms.
+Build a web application that enables users to search across all GitHub resources using natural language queries. Features expanded to include trending exploration, bookmarks, repo comparison, detail pages, and AI insights.
 
 ## Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn UI (Dark "Tactical Noir" theme, Electric Amber accents)
+- **Frontend**: React + Tailwind CSS + Shadcn UI (Dark "Tactical Noir" theme)
 - **Backend**: FastAPI + MongoDB + OpenAI GPT-4o-mini
-- **NLP Layer**: OpenAI GPT-4o-mini translates natural language → GitHub search qualifiers
-- **GitHub Integration**: REST API for repos, issues, PRs, users, code, commits
-
-## User Personas
-- Developers searching for open-source tools
-- Project managers exploring repositories
-- Non-technical users who don't know GitHub search syntax
-
-## Core Requirements
-- Natural language search bar with suggestions
-- NLP parsing of queries to GitHub search parameters
-- Categorized results display (repos, issues, PRs, users, code, commits)
-- GitHub Personal Access Token management for rate limits
-- Search history tracking
-- Entity type tab filtering
+- **NLP Layer**: OpenAI for query parsing + AI repo analysis
 
 ## What's Been Implemented (Feb 2026)
-- Full-stack app with FastAPI backend + React frontend
-- OpenAI GPT-4o-mini integration for NL → GitHub query translation
-- GitHub REST API integration for all entity types
-- Repository cards with stars, forks, language, topics, license
-- Issue/PR cards with state, labels, comments, author
-- User cards with avatar and type
-- Code cards with file path and repository
-- Commit cards with SHA, author, date
-- Settings modal for GitHub token management with validation
+
+### Core Search
+- Natural language search with GPT-4o-mini query parsing
+- Resource type filter chips (repos, issues, PRs, users, code, commits)
 - Search history with clear functionality
-- Suggestions dropdown with 8 example queries
-- Dark theme with Chivo/Manrope/JetBrains Mono typography
-- Staggered entrance animations on results
+- Suggestions dropdown
+
+### Navigation & Pages
+- NavBar: Search, Trending, Bookmarks, Compare + Settings
+- Detail pages: /repo/:owner/:name, /user/:login
+- All pages with consistent dark theme + amber accents
+
+### Trending Explorer
+- Time period selector: Today, This Week, This Month, 3 Months, 6 Months, 1 Year
+- Language filter (15+ languages)
+- Two views: Repositories view + Topics & Languages view
+- Trending topics with associated repos
+- Trending language breakdown
+
+### Detail Pages
+- Repo: Stats (stars/forks/watchers/issues), language breakdown bar, top contributors, recent commits, README, AI Analysis button, bookmark
+- User: Profile info, stats (repos/gists/followers/following), top repos, company/location/links
+
+### Bookmarks
+- Save any result (repo, user, issue, etc.)
+- Personal notes on bookmarks
+- Delete bookmarks
+- Navigate from bookmark to detail page
+
+### Compare
+- Compare 2-4 repos side-by-side
+- Visual metric bars (stars, forks, watchers, issues)
+- Detail cards with languages and metadata
+
+### AI Insights
+- GPT-4o-mini powered repo analysis
+- Shows: what it does, strengths, tech stack, audience, interesting fact
 
 ## P0 (Done)
 - [x] NL search with LLM parsing
-- [x] Multi-entity GitHub search
-- [x] Results display with metadata
-- [x] GitHub token settings
-- [x] Search history
+- [x] Resource type selector
+- [x] Detail pages (repo + user)
+- [x] Trending explorer with historical time ranges
+- [x] Trending topics & languages
+- [x] Bookmarks with notes
+- [x] Repo comparison
+- [x] AI insights
+- [x] Navigation system
 
 ## P1 (Backlog)
-- [ ] Pagination for search results
-- [ ] Search result caching in MongoDB
-- [ ] Advanced filter sidebar (language, date range, stars range)
-- [ ] Export search results
+- [ ] Pagination / infinite scroll
+- [ ] Result caching in MongoDB
+- [ ] Export search results as Markdown
+- [ ] Advanced filter sidebar (stars range, date range)
 
 ## P2 (Backlog)
 - [ ] GitHub OAuth login
-- [ ] Saved searches / bookmarks
-- [ ] Search analytics dashboard
-- [ ] Compare repositories side-by-side
-
-## Next Tasks
-1. Add pagination to load more results
-2. Implement result caching for repeated queries
-3. Add advanced filter controls
+- [ ] Saved search queries
+- [ ] Weekly digest
+- [ ] Developer spotlight (random profiles)
