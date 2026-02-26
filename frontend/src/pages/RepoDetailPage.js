@@ -291,10 +291,23 @@ export default function RepoDetailPage() {
         {repo.readme && (
           <div className="mb-10">
             <h2 className="text-xs font-mono uppercase tracking-widest text-muted-foreground/60 mb-4">README</h2>
-            <div className="bg-card border border-border/50 p-6" data-testid="readme-section">
-              <pre className="text-sm text-muted-foreground whitespace-pre-wrap break-words font-mono leading-relaxed max-h-[600px] overflow-y-auto">
-                {repo.readme}
-              </pre>
+            <div className="bg-card border border-border/50 p-6 max-h-[700px] overflow-y-auto" data-testid="readme-section">
+              <div className="prose prose-invert prose-sm max-w-none
+                prose-headings:font-[Chivo] prose-headings:text-foreground prose-headings:tracking-tight prose-headings:border-b prose-headings:border-border/30 prose-headings:pb-2 prose-headings:mb-4
+                prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
+                prose-p:text-muted-foreground prose-p:leading-relaxed
+                prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-foreground
+                prose-code:text-primary prose-code:bg-accent/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-xs prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
+                prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-border/50 prose-pre:text-muted-foreground prose-pre:text-xs
+                prose-li:text-muted-foreground prose-li:marker:text-primary/50
+                prose-img:rounded-none prose-img:border prose-img:border-border/30
+                prose-blockquote:border-primary/30 prose-blockquote:text-muted-foreground/70
+                prose-table:text-sm prose-th:text-foreground prose-th:border-border prose-td:border-border
+                prose-hr:border-border/30
+              ">
+                <Markdown remarkPlugins={[remarkGfm]}>{repo.readme}</Markdown>
+              </div>
             </div>
           </div>
         )}
