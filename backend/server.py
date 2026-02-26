@@ -195,7 +195,7 @@ async def search_users(query: str, per_page: int = 10):
     return items, data.get("total_count", 0)
 
 async def search_code(query: str, per_page: int = 10):
-    data = await github_request("/search/code", {"q": query, "per_page": per_page})
+    data = await github_request("/search/code", {"q": query, "per_page": per_page}, requires_auth=True)
     items = []
     for code in data.get("items", []):
         items.append({
