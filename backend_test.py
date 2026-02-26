@@ -128,6 +128,133 @@ class GitOracleAPITester:
                         print(f"   ✓ {entity_type}: {len(items)} items")
         return success
 
+    def test_trending_repos(self):
+        """Test trending repositories endpoint"""
+        success, response = self.run_test("Trending Repos", "GET", "trending?period=weekly", 200)
+        if success and 'items' in response:
+            print(f"   ✓ Found {len(response['items'])} trending repos")
+            if response.get('total_count'):
+                print(f"   ✓ Total trending repos: {response['total_count']}")
+        return success
+
+    def test_trending_with_language(self):
+        """Test trending repositories with language filter"""
+        success, response = self.run_test("Trending Python", "GET", "trending?period=monthly&language=Python", 200)
+        if success and 'items' in response:
+            print(f"   ✓ Found {len(response['items'])} Python trending repos")
+        return success
+
+    def test_trending_topics(self):
+        """Test trending topics endpoint"""
+        success, response = self.run_test("Trending Topics", "GET", "trending/topics?period=weekly", 200)
+        if success:
+            if 'topics' in response:
+                print(f"   ✓ Found {len(response['topics'])} trending topics")
+            if 'languages' in response:
+                print(f"   ✓ Found {len(response['languages'])} trending languages")
+        return success
+
+    def test_repo_detail(self):
+        """Test repository detail endpoint"""
+        success, response = self.run_test("Repo Detail", "GET", "repo/facebook/react", 200)
+        if success:
+            required_fields = ['name', 'description', 'stars', 'forks', 'language']
+            found_fields = [f for f in required_fields if f in response]
+            print(f"   ✓ Repo detail has {len(found_fields)}/{len(required_fields)} required fields")
+            if 'contributors' in response:
+                print(f"   ✓ Found {len(response.get('contributors', []))} contributors")
+        return success
+
+    def test_user_detail(self):
+        """Test user detail endpoint"""
+        success, response = self.run_test("User Detail", "GET", "user/torvalds", 200)
+        if success:
+            required_fields = ['login', 'avatar_url', 'public_repos', 'followers']
+            found_fields = [f for f in required_fields if f in response]
+            print(f"   ✓ User detail has {len(found_fields)}/{len(required_fields)} required fields")
+            if 'repos' in response:
+                print(f"   ✓ Found {len(response.get('repos', []))} user repos")
+        return success
+
+    def test_compare_repos(self):
+        """Test repository comparison endpoint"""
+        success, response = self.run_test("Compare Repos", "GET", "compare?repos=facebook/react,vuejs/vue", 200)
+        if success and 'repos' in response:
+            print(f"   ✓ Comparing {len(response['repos'])} repos")
+            for repo in response['repos']:
+                if 'error' not in repo:
+                    print(f"   ✓ {repo.get('name', 'Unknown')}: {repo.get('stars', 0)} stars")
+        return success
+
+    def test_compare_single_repo(self):
+        """Test repository comparison with single repo (should fail)"""
+        return self.run_test("Compare Single Repo", "GET", "compare?repos=facebook/react", 400)
+
+    def test_bookmarks_get_empty(self):
+        """Test getting bookmarks (initially empty)"""
+        success, response = self.run_test("Get Empty Bookmarks", "GET", "bookmarks", 200)
+        if success and isinstance(response, list):
+            print(f"   ✓ Found {len(response)} bookmarks")
+        return success
+
+    def test_bookmarks_add_repo(self):
+        """Test adding a repository bookmark"""
+        bookmark_data = {
+            "item_type": "repository",
+            "item_data": {
+                "name": "facebook/react",
+                "description": "A declarative, efficient, and flexible JavaScript library for building user interfaces.",
+                "url": "https://github.com/facebook/react",
+                "stars": 220000,
+                "language": "JavaScript"
+            },
+            "note": "Popular React library"
+        }
+        success, response = self.run_test("Add Repo Bookmark", "POST", "bookmarks", 200, bookmark_data)
+        if success and 'id' in response:
+            print(f"   ✓ Created bookmark with ID: {response['id']}")
+            # Store the bookmark ID for later tests
+            self.bookmark_id = response['id']
+        return success
+
+    def test_bookmarks_get_with_items(self):
+        """Test getting bookmarks after adding one"""
+        success, response = self.run_test("Get Bookmarks", "GET", "bookmarks", 200)
+        if success and isinstance(response, list) and len(response) > 0:
+            print(f"   ✓ Found {len(response)} bookmarks")
+            bookmark = response[0]
+            if 'note' in bookmark:
+                print(f"   ✓ Bookmark has note: {bookmark['note'][:50]}...")
+        return success
+
+    def test_bookmarks_update_note(self):
+        """Test updating bookmark note"""
+        if not hasattr(self, 'bookmark_id'):
+            print("   ⚠️  Skipping - no bookmark ID available")
+            return True
+        
+        note_data = {"bookmark_id": self.bookmark_id, "note": "Updated note for React"}
+        return self.run_test("Update Bookmark Note", "PUT", f"bookmarks/{self.bookmark_id}/note", 200, note_data)
+
+    def test_bookmarks_delete(self):
+        """Test deleting a bookmark"""
+        if not hasattr(self, 'bookmark_id'):
+            print("   ⚠️  Skipping - no bookmark ID available")
+            return True
+        
+        return self.run_test("Delete Bookmark", "DELETE", f"bookmarks/{self.bookmark_id}", 200)
+
+    def test_ai_insights_repo(self):
+        """Test AI insights for repository"""
+        insight_data = {"repo_full_name": "facebook/react"}
+        success, response = self.run_test("AI Insights Repo", "POST", "ai-insights", 200, insight_data)
+        if success and 'insight' in response:
+            insight_len = len(response['insight'])
+            print(f"   ✓ Generated AI insight ({insight_len} chars)")
+            if insight_len > 100:
+                print(f"   ✓ Insight preview: {response['insight'][:100]}...")
+        return success
+
 def main():
     print("🚀 Starting GitOracle API Tests")
     print("="*60)
