@@ -86,12 +86,13 @@ export const ResultsPanel = ({ results, resultCounts, parsed, errors, loading, a
           {Object.entries(errors).map(([type, msg]) => (
             <div
               key={type}
-              className="flex items-center gap-3 px-4 py-3 bg-destructive/10 border border-destructive/20 text-sm"
+              className="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 text-sm"
               data-testid={`error-${type}`}
             >
-              <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-              <span className="text-destructive">
-                <strong className="uppercase font-mono text-xs">{type}:</strong> {msg}
+              <AlertCircle className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-muted-foreground">
+                <strong className="uppercase font-mono text-xs text-primary">{type}:</strong>{" "}
+                {msg}
               </span>
             </div>
           ))}
