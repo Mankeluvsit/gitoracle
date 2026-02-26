@@ -3,8 +3,11 @@ import { GitCommit, ExternalLink } from "lucide-react";
 const timeAgo = (dateStr) => {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days < 1) return "today";
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
   if (days < 30) return `${days}d ago`;
   if (days < 365) return `${Math.floor(days / 30)}mo ago`;
   return `${Math.floor(days / 365)}y ago`;
