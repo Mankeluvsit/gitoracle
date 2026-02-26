@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
