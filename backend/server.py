@@ -58,8 +58,10 @@ async def get_github_token():
         return doc.get("value")
     return None
 
-async def github_request(endpoint: str, params: dict = None):
+async def github_request(endpoint: str, params: dict = None, requires_auth: bool = False):
     token = await get_github_token()
+    if requires_auth and not token:
+        raise HTTPException(status_code=401, detail="This search type requires a GitHub token. Add one in Settings.")
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28"
@@ -70,8 +72,10 @@ async def github_request(endpoint: str, params: dict = None):
     async with httpx.AsyncClient(timeout=30.0) as http_client:
         url = f"{GITHUB_API_BASE}{endpoint}"
         resp = await http_client.get(url, headers=headers, params=params)
+        if resp.status_code == 401:
+            raise HTTPException(status_code=401, detail="GitHub token is invalid or expired. Update it in Settings.")
         if resp.status_code == 403:
-            raise HTTPException(status_code=429, detail="GitHub API rate limit exceeded. Add a GitHub token in settings for higher limits.")
+            raise HTTPException(status_code=429, detail="GitHub API rate limit exceeded. Add a GitHub token in Settings for higher limits.")
         if resp.status_code == 422:
             raise HTTPException(status_code=422, detail="GitHub could not process the search query. Try rephrasing.")
         resp.raise_for_status()
