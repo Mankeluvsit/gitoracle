@@ -3,10 +3,9 @@ import axios from "axios";
 import { toast } from "sonner";
 import { SearchBar } from "@/components/SearchBar";
 import { ResultsPanel } from "@/components/ResultsPanel";
-import { Header } from "@/components/Header";
-import { SettingsModal } from "@/components/SettingsModal";
 import { SearchHistory } from "@/components/SearchHistory";
 import { HeroSection } from "@/components/HeroSection";
+import { ResourceFilter } from "@/components/ResourceFilter";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -17,37 +16,30 @@ export default function SearchPage() {
   const [parsed, setParsed] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedResources, setSelectedResources] = useState([]);
 
   const fetchHistory = useCallback(async () => {
     try {
       const resp = await axios.get(`${API}/search/history`);
       setHistory(resp.data);
-    } catch (e) {
-      // silent
-    }
+    } catch (e) { /* silent */ }
   }, []);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
   const handleSearch = async (searchQuery, entityTypes = null) => {
     const q = searchQuery || query;
     if (!q.trim()) return;
-
     setLoading(true);
     setHasSearched(true);
     setErrors({});
-
     try {
       const payload = { query: q };
-      if (entityTypes && entityTypes.length > 0) {
-        payload.entity_types = entityTypes;
-      }
+      const resources = entityTypes || (selectedResources.length > 0 ? selectedResources : null);
+      if (resources) payload.entity_types = resources;
       const resp = await axios.post(`${API}/search`, payload);
       setResults(resp.data.results);
       setResultCounts(resp.data.result_counts || {});
@@ -55,14 +47,11 @@ export default function SearchPage() {
       setErrors(resp.data.errors || {});
       setActiveTab("all");
       fetchHistory();
-
       if (Object.keys(resp.data.errors || {}).length > 0) {
-        const errTypes = Object.keys(resp.data.errors);
-        toast.warning(`Some searches failed: ${errTypes.join(", ")}`);
+        toast.warning(`Some searches failed: ${Object.keys(resp.data.errors).join(", ")}`);
       }
     } catch (e) {
-      const detail = e.response?.data?.detail || "Search failed. Please try again.";
-      toast.error(detail);
+      toast.error(e.response?.data?.detail || "Search failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -78,51 +67,30 @@ export default function SearchPage() {
       await axios.delete(`${API}/search/history`);
       setHistory([]);
       toast.success("History cleared");
-    } catch (e) {
-      toast.error("Failed to clear history");
-    }
+    } catch (e) { toast.error("Failed to clear history"); }
   };
 
   return (
     <div className="min-h-screen bg-background" data-testid="search-page">
-      <Header onSettingsClick={() => setSettingsOpen(true)} />
-
       <main className="max-w-7xl mx-auto px-6 md:px-12">
-        {!hasSearched && (
-          <HeroSection />
-        )}
+        {!hasSearched && <HeroSection />}
 
-        <div className={`${hasSearched ? "pt-8" : "pt-0"}`}>
-          <SearchBar
-            query={query}
-            setQuery={setQuery}
-            onSearch={handleSearch}
-            loading={loading}
-          />
+        <div className={hasSearched ? "pt-8" : "pt-0"}>
+          <SearchBar query={query} setQuery={setQuery} onSearch={handleSearch} loading={loading} />
+          <ResourceFilter selected={selectedResources} onChange={setSelectedResources} />
         </div>
 
         {!hasSearched && history.length > 0 && (
-          <SearchHistory
-            history={history}
-            onHistoryClick={handleHistoryClick}
-            onClearHistory={handleClearHistory}
-          />
+          <SearchHistory history={history} onHistoryClick={handleHistoryClick} onClearHistory={handleClearHistory} />
         )}
 
         {hasSearched && (
           <ResultsPanel
-            results={results}
-            resultCounts={resultCounts}
-            parsed={parsed}
-            errors={errors}
-            loading={loading}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            results={results} resultCounts={resultCounts} parsed={parsed}
+            errors={errors} loading={loading} activeTab={activeTab} setActiveTab={setActiveTab}
           />
         )}
       </main>
-
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }
