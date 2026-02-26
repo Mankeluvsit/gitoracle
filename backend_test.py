@@ -263,13 +263,41 @@ def main():
 
     # Run all tests in logical order
     tests_to_run = [
+        # Basic API tests
         tester.test_root_endpoint,
         tester.test_search_suggestions,
         tester.test_github_token_get_status,
+        
+        # Search functionality tests
         tester.test_search_basic,
         tester.test_search_with_entity_filter,
         tester.test_comprehensive_search,
         tester.test_search_empty_query,
+        
+        # Trending functionality tests
+        tester.test_trending_repos,
+        tester.test_trending_with_language,
+        tester.test_trending_topics,
+        
+        # Detail page tests
+        tester.test_repo_detail,
+        tester.test_user_detail,
+        
+        # Compare functionality tests
+        tester.test_compare_repos,
+        tester.test_compare_single_repo,
+        
+        # Bookmark functionality tests
+        tester.test_bookmarks_get_empty,
+        tester.test_bookmarks_add_repo,
+        tester.test_bookmarks_get_with_items,
+        tester.test_bookmarks_update_note,
+        tester.test_bookmarks_delete,
+        
+        # AI functionality tests
+        tester.test_ai_insights_repo,
+        
+        # Cleanup tests
         tester.test_github_token_invalid_save,
         tester.test_search_history_get,
         tester.test_search_history_clear,
