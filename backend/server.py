@@ -7,6 +7,7 @@ import logging
 import json
 import httpx
 import base64
+import copy
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
@@ -17,9 +18,112 @@ from openai import AsyncOpenAI
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+class _InMemoryResult:
+    def __init__(self, deleted_count: int = 0, matched_count: int = 0):
+        self.deleted_count = deleted_count
+        self.matched_count = matched_count
+
+
+class _InMemoryCursor:
+    def __init__(self, docs: List[Dict[str, Any]]):
+        self._docs = docs
+
+    def sort(self, field: str, direction: int):
+        reverse = direction == -1
+        self._docs = sorted(self._docs, key=lambda x: x.get(field, ""), reverse=reverse)
+        return self
+
+    async def to_list(self, limit: int):
+        return self._docs[:limit]
+
+
+class _InMemoryCollection:
+    def __init__(self):
+        self.docs: List[Dict[str, Any]] = []
+
+    @staticmethod
+    def _matches(doc: Dict[str, Any], query: Dict[str, Any]) -> bool:
+        return all(doc.get(k) == v for k, v in query.items())
+
+    @staticmethod
+    def _apply_projection(doc: Dict[str, Any], projection: Optional[Dict[str, int]]) -> Dict[str, Any]:
+        if not projection:
+            return copy.deepcopy(doc)
+        if projection.get("_id") == 0:
+            clean = copy.deepcopy(doc)
+            clean.pop("_id", None)
+            return clean
+        return copy.deepcopy(doc)
+
+    async def find_one(self, query: Dict[str, Any], projection: Optional[Dict[str, int]] = None):
+        for doc in self.docs:
+            if self._matches(doc, query):
+                return self._apply_projection(doc, projection)
+        return None
+
+    async def insert_one(self, doc: Dict[str, Any]):
+        to_store = copy.deepcopy(doc)
+        to_store.setdefault("_id", str(uuid.uuid4()))
+        self.docs.append(to_store)
+        return _InMemoryResult()
+
+    def find(self, query: Dict[str, Any], projection: Optional[Dict[str, int]] = None):
+        filtered = [self._apply_projection(d, projection) for d in self.docs if self._matches(d, query)]
+        return _InMemoryCursor(filtered)
+
+    async def delete_one(self, query: Dict[str, Any]):
+        for idx, doc in enumerate(self.docs):
+            if self._matches(doc, query):
+                del self.docs[idx]
+                return _InMemoryResult(deleted_count=1)
+        return _InMemoryResult(deleted_count=0)
+
+    async def delete_many(self, query: Dict[str, Any]):
+        if not query:
+            count = len(self.docs)
+            self.docs.clear()
+            return _InMemoryResult(deleted_count=count)
+        old_count = len(self.docs)
+        self.docs = [d for d in self.docs if not self._matches(d, query)]
+        return _InMemoryResult(deleted_count=old_count - len(self.docs))
+
+    async def update_one(self, query: Dict[str, Any], update: Dict[str, Any], upsert: bool = False):
+        for doc in self.docs:
+            if self._matches(doc, query):
+                if "$set" in update:
+                    doc.update(update["$set"])
+                return _InMemoryResult(matched_count=1)
+        if upsert:
+            new_doc = copy.deepcopy(query)
+            if "$set" in update:
+                new_doc.update(update["$set"])
+            await self.insert_one(new_doc)
+            return _InMemoryResult(matched_count=1)
+        return _InMemoryResult(matched_count=0)
+
+
+class _InMemoryDB:
+    def __init__(self):
+        self.settings = _InMemoryCollection()
+        self.search_history = _InMemoryCollection()
+        self.bookmarks = _InMemoryCollection()
+
+
+mongo_url = os.environ.get('MONGO_URL')
+db_name = os.environ.get('DB_NAME', 'gitoracle')
+client = None
+db = None
+
+if mongo_url:
+    try:
+        client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=2000)
+        db = client[db_name]
+    except Exception:
+        client = None
+        db = None
+
+if db is None:
+    db = _InMemoryDB()
 
 openai_client = AsyncOpenAI(api_key=os.environ.get('OPENAI_API_KEY', ''))
 
@@ -121,6 +225,13 @@ Example response:
 {"entity_types": ["repositories", "issues"], "search_queries": {"repositories": "machine learning language:python stars:>1000", "issues": "machine learning bug is:issue is:open"}}"""
 
 async def parse_query_with_llm(query: str, entity_types: Optional[List[str]] = None) -> dict:
+    if not os.environ.get("OPENAI_API_KEY"):
+        selected = entity_types or ["repositories", "issues"]
+        return {
+            "entity_types": selected,
+            "search_queries": {et: query for et in selected},
+        }
+
     user_msg = f"User query: \"{query}\""
     if entity_types:
         user_msg += f"\nOnly search these types: {', '.join(entity_types)}"
@@ -572,6 +683,15 @@ README excerpt: {readme_content[:2000]}"""
         except Exception as e:
             context = f"Repository: {req.repo_full_name} (could not fetch details: {e})"
 
+    if not os.environ.get("OPENAI_API_KEY"):
+        fallback = (
+            "AI insights are unavailable because OPENAI_API_KEY is not configured. "
+            "You can still use search, trending, compare, and bookmark endpoints."
+        )
+        if context:
+            fallback += f"\n\nContext summary:\n{context[:1200]}"
+        return {"insight": fallback}
+
     response = await openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -593,4 +713,5 @@ app.add_middleware(
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    if client:
+        client.close()
