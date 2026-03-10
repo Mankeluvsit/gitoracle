@@ -1,0 +1,25 @@
+name: Codespaces Prebuild Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - ".devcontainer/**"
+      - "frontend/package.json"
+      - "frontend/yarn.lock"
+      - "backend/requirements.txt"
+      - ".github/workflows/codespaces-prebuild.yml"
+
+jobs:
+  validate-devcontainer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JSON
+        run: jq . .devcontainer/devcontainer.json > /dev/null
+
+      - name: Show Compose config
+        run: docker compose -f .devcontainer/docker-compose.yml config > /dev/null

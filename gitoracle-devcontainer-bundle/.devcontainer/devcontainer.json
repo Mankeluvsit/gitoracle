@@ -1,0 +1,74 @@
+{
+  "name": "gitoracle-dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "runServices": ["app", "mongo"],
+  "workspaceFolder": "/workspaces/gitoracle",
+  "forwardPorts": [3000, 8001, 27017],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend (CRA/CRACO)",
+      "onAutoForward": "openBrowser"
+    },
+    "8001": {
+      "label": "Backend API (FastAPI)",
+      "onAutoForward": "openBrowser"
+    },
+    "27017": {
+      "label": "MongoDB"
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "files.eol": "\n",
+        "python.defaultInterpreterPath": "/workspaces/gitoracle/backend/.venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "eamodio.gitlens",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
+  "postStartCommand": "bash .devcontainer/scripts/post-start.sh",
+  "shutdownAction": "stopCompose",
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "mounts": [
+    "source=gitoracle-frontend-node-modules,target=/workspaces/gitoracle/frontend/node_modules,type=volume",
+    "source=gitoracle-backend-venv,target=/workspaces/gitoracle/backend/.venv,type=volume"
+  ],
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "16gb"
+  },
+  "codespaces": {
+    "openFiles": [
+      "README.md",
+      "frontend/package.json",
+      "backend/requirements.txt"
+    ]
+  }
+}
