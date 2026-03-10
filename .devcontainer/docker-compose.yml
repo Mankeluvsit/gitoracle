@@ -1,5 +1,4 @@
 version: "3.9"
-
 services:
   app:
     build:
@@ -8,30 +7,18 @@ services:
     volumes:
       - ..:/workspaces/gitoracle:cached
     command: sleep infinity
-    environment:
-      HOST: 0.0.0.0
-      PORT: 3000
-      BROWSER: none
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      PYTHONUNBUFFERED: "1"
+    working_dir: /workspaces/gitoracle
     depends_on:
       - mongo
-    networks:
-      - gitoracle-net
-
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      DB_NAME: gitoracle
   mongo:
     image: mongo:7
     restart: unless-stopped
-    ports:
-      - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    networks:
-      - gitoracle-net
-
+    ports:
+      - "27017:27017"
 volumes:
   mongo-data:
-
-networks:
-  gitoracle-net:
